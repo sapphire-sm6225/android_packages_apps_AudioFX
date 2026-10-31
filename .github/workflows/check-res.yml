@@ -44,7 +44,7 @@ jobs:
           GRADLE
           sed -i 's/^          //' "$S/build.gradle"
           cd "$S" && gradle --no-daemon -q processDebugResources > "$RUNNER_TEMP/g.txt" 2>&1 && exit 0
-          echo "::error::$(grep -E 'error|Error|FAILED|not found|private' "$RUNNER_TEMP/g.txt" | head -8 | cut -c1-300 | tr '\n' '|')"
+          echo "::error::$(grep -E -A4 'What went wrong|error:|not found|private' "$RUNNER_TEMP/g.txt" | head -14 | cut -c1-300 | tr '\n' '|')"
           tail -40 "$RUNNER_TEMP/g.txt"; exit 1
       - name: java syntax, R.* references, manifest classes
         run: |
