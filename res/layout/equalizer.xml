@@ -9,15 +9,6 @@
     android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-    <include
-            layout="@layout/eq_container"
-            android:layout_weight="1"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"/>
-
     <LinearLayout
             android:orientation="vertical"
         android:layout_width="match_parent"
@@ -44,7 +35,7 @@
                 android:clipToPadding="false"
                 android:paddingStart="16dp"
                 android:paddingEnd="8dp"
-                android:paddingBottom="12dp">
+                android:paddingBottom="4dp">
             <LinearLayout
                     android:id="@+id/preset_chips"
                     android:layout_width="wrap_content"
@@ -60,4 +51,14 @@
         />
 
     </LinearLayout>
+    <include
+            layout="@layout/eq_container"
+            android:layout_weight="1"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginBottom="12dp"/>
+
 </org.lineageos.audiofx.eq.EqSwipeController>

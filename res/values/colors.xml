@@ -9,7 +9,7 @@
 
     <!-- Stage 2: theme colours, follow the system palette and light/dark -->
     <color name="afx_surface">@android:color/system_neutral1_10</color>
-    <color name="afx_surface_disabled">@android:color/system_neutral1_100</color>
+    <color name="afx_surface_disabled">@color/afx_surface</color>
     <color name="afx_card">@android:color/system_neutral1_50</color>
     <color name="afx_on_surface">@android:color/system_neutral1_900</color>
     <color name="afx_on_surface_variant">@android:color/system_neutral2_700</color>

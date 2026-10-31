@@ -21,11 +21,14 @@ import android.util.ArrayMap;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.SubMenu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
+import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
@@ -55,6 +58,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
     boolean mDeviceChanging;
 
     private MenuItem mMenuDevices;
+    private TextView mDeviceChip;
 
     // current selected index
     public int mSelectedPosition = 0;
@@ -212,6 +216,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
 
     public void updateEnabledState() {
         boolean currentDeviceEnabled = mConfig.isCurrentDeviceEnabled();
+        dimContent(currentDeviceEnabled);
         if (mEqFragment != null) {
             mEqFragment.updateEnabledState();
         }
@@ -314,6 +319,41 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
             selectedItem.setChecked(true);
             mMenuDevices.setIcon(selectedItem.getIcon());
         }
+        // the device chip replaces the action bar icon where the layout has one
+        mMenuDevices.setVisible(mDeviceChip == null);
+        if (mDeviceChip != null && selectedItem != null) {
+            mDeviceChip.setText(selectedItem.getTitle());
+            mDeviceChip.setCompoundDrawablesRelativeWithIntrinsicBounds(selectedItem.getIcon(),
+                    null, getResources().getDrawable(R.drawable.ic_arrow_drop_down, null), null);
+        }
+    }
+
+    private void showDevicePopup(View anchor) {
+        if (mMenuDevices == null || mMenuDevices.getSubMenu() == null) {
+            return;
+        }
+        final SubMenu sub = mMenuDevices.getSubMenu();
+        final PopupMenu popup = new PopupMenu(getActivity(), anchor);
+        for (int i = 0; i < sub.size(); i++) {
+            final MenuItem src = sub.getItem(i);
+            final MenuItem it = popup.getMenu().add(0, i, i, src.getTitle());
+            it.setCheckable(true);
+            it.setChecked(src.isChecked());
+        }
+        popup.getMenu().setGroupCheckable(0, true, true);
+        popup.setOnMenuItemClickListener(it -> onOptionsItemSelected(sub.getItem(it.getItemId())));
+        popup.show();
+    }
+
+    /** Off state: fade the content instead of recolouring the whole screen. */
+    private void dimContent(boolean enabled) {
+        final float alpha = enabled ? 1f : 0.4f;
+        if (mEqFragment != null && mEqFragment.getView() != null) {
+            mEqFragment.getView().animate().alpha(alpha).setDuration(250).start();
+        }
+        if (mControlFragment != null && mControlFragment.getView() != null) {
+            mControlFragment.getView().animate().alpha(alpha).setDuration(250).start();
+        }
     }
 
     @Override
@@ -392,6 +432,10 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
         super.onViewCreated(view, savedInstanceState);
 
         mInterceptLayout = view.findViewById(R.id.interceptable_layout);
+        mDeviceChip = view.findViewById(R.id.device_chip);
+        if (mDeviceChip != null) {
+            mDeviceChip.setOnClickListener(this::showDevicePopup);
+        }
     }
 
     public void animateBackgroundColorTo(int colorTo, Animator.AnimatorListener listener,
@@ -423,6 +467,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
 
     @Override
     public void onGlobalDeviceToggle(final boolean checked) {
+        dimContent(checked);
         final CompoundButton buttonView = getGlobalSwitch();
         final Animator.AnimatorListener animatorListener = new Animator.AnimatorListener() {
             @Override

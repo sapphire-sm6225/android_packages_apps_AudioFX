@@ -95,7 +95,7 @@ public class ControlsFragment extends AudioFxBaseFragment {
                         new int[]{}
                 },
                 new int[]{
-                        color,
+                        getResources().getColor(R.color.afx_arc_bg, null),
                         color,
                         Color.GRAY
                 }
