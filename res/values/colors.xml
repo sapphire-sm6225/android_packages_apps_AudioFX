@@ -6,26 +6,14 @@
      SPDX-License-Identifier: BSD-3-Clause
 -->
 <resources>
-    <color name="highlight">#cc8f8f8f</color>
 
-    <color name="white">#ffffffff</color>
-
-    <color name="preset_custom">#CE5B4C</color>
-    <color name="preset_normal">#CB6139</color>
-    <color name="preset_classical">#BE963F</color>
-    <color name="preset_dance">#BEBD3F</color>
-    <color name="preset_flat">#84B74E</color>
-    <color name="preset_folk">#80B74F</color>
-    <color name="preset_metal">#65B759</color>
-    <color name="preset_hiphop">#5CB797</color>
-    <color name="preset_jazz">#5B82B7</color>
-    <color name="preset_pop">#585DCA</color>
-    <color name="preset_rock">#9A62CB</color>
-    <color name="preset_electronic">#C862C5</color>
-    <color name="preset_small_speakers">#CB629A</color>
-    <color name="band_bar_color_selected">#ffffffff</color>
-    <color name="knob_container_background">#323437</color>
-    <color name="disabled_eq">#ff6c6c6c</color>
-    <color name="radial_knob_arc_bg">#4e5052</color>
-    <color name="radial_knob_arc_bg_disabled">#6c6c6c</color>
+    <!-- Stage 2: theme colours, follow the system palette and light/dark -->
+    <color name="afx_surface">@android:color/system_neutral1_10</color>
+    <color name="afx_surface_disabled">@android:color/system_neutral1_100</color>
+    <color name="afx_card">@android:color/system_neutral1_50</color>
+    <color name="afx_on_surface">@android:color/system_neutral1_900</color>
+    <color name="afx_on_surface_variant">@android:color/system_neutral2_700</color>
+    <color name="afx_accent">@android:color/system_accent1_600</color>
+    <color name="afx_arc_bg">@android:color/system_neutral2_200</color>
+    <color name="afx_popup">@android:color/system_neutral2_100</color>
 </resources>

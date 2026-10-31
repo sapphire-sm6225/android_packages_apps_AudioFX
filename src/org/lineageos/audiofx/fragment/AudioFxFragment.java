@@ -90,7 +90,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
             mSystemDevice = mConfig.getDeviceById(system);
         }
 
-        mDisabledColor = getResources().getColor(R.color.disabled_eq);
+        mDisabledColor = getResources().getColor(R.color.afx_surface_disabled, null);
 
         setHasOptionsMenu(true);
     }

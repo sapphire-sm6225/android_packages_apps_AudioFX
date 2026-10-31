@@ -13,7 +13,7 @@
           android:textSize="@dimen/preset_text_size"
           android:gravity="center"
           android:layout_margin="@dimen/preset_text_padding"
-          android:textColor="@color/white"
+          android:textColor="@color/afx_on_surface"
           android:textAllCaps="true"
           android:ellipsize="end"
           android:maxLines="1"

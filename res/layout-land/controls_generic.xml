@@ -8,7 +8,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="164dp"
     android:layout_height="match_parent"
-    android:background="@color/knob_container_background"
+    android:background="@color/afx_card"
     android:elevation="8dp"
     android:gravity="center"
     android:orientation="vertical"
@@ -29,7 +29,7 @@
             android:fontFamily="sans-serif"
             android:maxLines="1"
             android:text="@string/reverb"
-            android:textColor="@color/white"
+            android:textColor="@color/afx_on_surface"
             android:textSize="@dimen/reverb_switch_label_size" />
 
         <com.google.android.material.materialswitch.MaterialSwitch

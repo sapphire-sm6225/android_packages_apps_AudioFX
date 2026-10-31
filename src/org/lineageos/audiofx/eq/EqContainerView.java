@@ -9,7 +9,6 @@ package org.lineageos.audiofx.eq;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.DashPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -156,18 +155,19 @@ public class EqContainerView extends FrameLayout
 
         setWillNotDraw(false);
 
-        mSelectedBandColor = r.getColor(R.color.band_bar_color_selected, mContext.getTheme());
+        mSelectedBandColor = r.getColor(R.color.afx_accent, mContext.getTheme());
+        final int onSurface = r.getColor(R.color.afx_on_surface, mContext.getTheme());
 
         mTextPaint = new Paint();
         mTextPaint.setAntiAlias(true);
-        mTextPaint.setColor(Color.WHITE);
+        mTextPaint.setColor(onSurface);
         mTextPaint.setTextAlign(Paint.Align.CENTER);
         mTextPaint.setElegantTextHeight(true);
         mTextPaint.setTextSize(selectedBoxTextSize);
 
         mFreqPaint = new Paint();
         mFreqPaint.setAntiAlias(true);
-        mFreqPaint.setColor(Color.WHITE);
+        mFreqPaint.setColor(onSurface);
         mFreqPaint.setTextAlign(Paint.Align.CENTER);
         mFreqPaint.setTextSize(freqTextSize);
 
@@ -176,7 +176,7 @@ public class EqContainerView extends FrameLayout
         mSelectedFreqPaint.setTextSize(selectedBoxTextSize);
 
         mCenterLinePaint = new Paint();
-        mCenterLinePaint.setColor(Color.WHITE);
+        mCenterLinePaint.setColor(onSurface);
         mCenterLinePaint.setAntiAlias(true);
         mCenterLinePaint.setPathEffect(new DashPathEffect(new float[]{6, 6}, 0));
         mCenterLinePaint.setStyle(Paint.Style.STROKE);
@@ -262,7 +262,7 @@ public class EqContainerView extends FrameLayout
                 } else {
                     bar.setAlpha(0.8f);
                 }
-                bar.setBackgroundColor(Color.WHITE);
+                bar.setBackgroundColor(mSelectedBandColor);
 
                 addView(bar, getFrameParams(i));
                 bar.setParentHeight(mHeight, getTop());

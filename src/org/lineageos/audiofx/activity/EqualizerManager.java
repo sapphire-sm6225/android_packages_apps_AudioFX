@@ -488,34 +488,8 @@ public class EqualizerManager {
      * @return a color which is associated with this preset.
      */
     public int getAssociatedPresetColorHex(int index) {
-        int r = -1;
-
-        int[] colors = {
-                R.color.preset_normal,
-                R.color.preset_classical,
-                R.color.preset_dance,
-                R.color.preset_flat,
-                R.color.preset_folk,
-                R.color.preset_metal,
-                R.color.preset_hiphop,
-                R.color.preset_jazz,
-                R.color.preset_pop,
-                R.color.preset_rock,
-                R.color.preset_electronic,
-                R.color.preset_small_speakers
-        };
-
-        index = index % mEqPresets.size();
-        if (mEqPresets.get(index) instanceof Preset.CustomPreset) {
-            r = R.color.preset_custom;
-        } else {
-            if (index >= colors.length) {
-                return r;
-            }
-
-            r = colors[index];
-        }
-        return mContext.getResources().getColor(r);
+        // presets no longer have their own colour; the theme decides
+        return mContext.getResources().getColor(R.color.afx_surface, mContext.getTheme());
     }
 
     /**

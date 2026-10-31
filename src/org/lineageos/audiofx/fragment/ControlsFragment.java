@@ -60,11 +60,15 @@ public class ControlsFragment extends AudioFxBaseFragment {
 
     @Override
     public void updateFragmentBackgroundColors(int color) {
+        if (getActivity() == null) {
+            return;
+        }
+        final int accent = getResources().getColor(R.color.afx_accent, null);
         if (mKnobContainer != null) {
-            mKnobContainer.updateKnobHighlights(color);
+            mKnobContainer.updateKnobHighlights(accent);
         }
         if (mReverbSwitch != null) {
-            updateSwitchColor(mReverbSwitch, color);
+            updateSwitchColor(mReverbSwitch, accent);
         }
     }
 

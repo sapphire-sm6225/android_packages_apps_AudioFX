@@ -12,7 +12,6 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.Typeface;
@@ -78,9 +77,9 @@ public class RadialKnob extends View {
         mContext = context;
 
         Resources res = getResources();
-        mBackgroundArcColor = res.getColor(R.color.radial_knob_arc_bg);
-        mBackgroundArcColorDisabled = res.getColor(R.color.radial_knob_arc_bg_disabled);
-        mHighlightColor = res.getColor(R.color.highlight);
+        mBackgroundArcColor = res.getColor(R.color.afx_arc_bg, null);
+        mBackgroundArcColorDisabled = res.getColor(R.color.afx_arc_bg, null);
+        mHighlightColor = res.getColor(R.color.afx_accent, null);
 
         mTextPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mTextPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
@@ -88,7 +87,7 @@ public class RadialKnob extends View {
         mTextPaint.setElegantTextHeight(true);
         mTextPaint.setFakeBoldText(true);
         mTextPaint.setTextSize(res.getDimension(R.dimen.radial_text_size));
-        mTextPaint.setColor(Color.LTGRAY);
+        mTextPaint.setColor(res.getColor(R.color.afx_on_surface_variant, null));
 
         mTextOffset = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2,
                 getResources().getDisplayMetrics());

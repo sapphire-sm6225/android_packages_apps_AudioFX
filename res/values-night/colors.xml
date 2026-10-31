@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: 2013 The Linux Foundation
+     SPDX-FileCopyrightText: 2013-2016 The CyanogenMod Project
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: BSD-3-Clause
+-->
+<resources>
+    <!-- Stage 2: theme colours, follow the system palette and light/dark -->
+    <color name="afx_surface">@android:color/system_neutral1_10</color>
+    <color name="afx_surface_disabled">@android:color/system_neutral1_100</color>
+    <color name="afx_card">@android:color/system_neutral1_800</color>
+    <color name="afx_on_surface">@android:color/system_neutral1_100</color>
+    <color name="afx_on_surface_variant">@android:color/system_neutral2_200</color>
+    <color name="afx_accent">@android:color/system_accent1_200</color>
+    <color name="afx_arc_bg">@android:color/system_neutral2_700</color>
+    <color name="afx_popup">@android:color/system_neutral2_700</color>
+</resources>

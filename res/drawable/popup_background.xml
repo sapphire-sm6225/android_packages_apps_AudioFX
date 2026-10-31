@@ -8,5 +8,5 @@
     android:shape="rectangle">
 
     <corners android:radius="28dp" />
-    <solid android:color="@android:color/system_neutral2_700" />
+    <solid android:color="@color/afx_popup" />
 </shape>
