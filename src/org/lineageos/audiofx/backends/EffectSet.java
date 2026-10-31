@@ -22,7 +22,7 @@ public abstract class EffectSet {
 
     private AudioDeviceInfo mDeviceInfo;
 
-    private boolean mMarkedForDeath = false;
+    private volatile boolean mMarkedForDeath = false;
 
     public EffectSet(int sessionId, AudioDeviceInfo deviceInfo) {
         mSessionId = sessionId;

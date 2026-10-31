@@ -115,6 +115,15 @@ public class Constants {
         presetPrefs.apply();
     }
 
+    /** Parses a stored preference string, falling back to {@code def} if it is missing or corrupt. */
+    public static int parseInt(String value, int def) {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException | NullPointerException e) {
+            return def;
+        }
+    }
+
     public static int[] getBandLevelRange(Context context) {
         String savedCenterFreqs = context.getSharedPreferences("global", 0).getString(
                 "equalizer.band_level_range", null);
@@ -124,7 +133,11 @@ public class Constants {
             String[] split = savedCenterFreqs.split(";");
             int[] freqs = new int[split.length];
             for (int i = 0; i < split.length; i++) {
-                freqs[i] = Integer.parseInt(split[i]);
+                try {
+                    freqs[i] = Integer.parseInt(split[i]);
+                } catch (NumberFormatException e) {
+                    return new int[]{-1500, 1500}; // corrupt pref, use the default range
+                }
             }
             return freqs;
         }
@@ -137,7 +150,7 @@ public class Constants {
         String[] split = savedCenterFreqs.split(";");
         int[] freqs = new int[split.length];
         for (int i = 0; i < split.length; i++) {
-            freqs[i] = Integer.parseInt(split[i]);
+            freqs[i] = parseInt(split[i], 0); // 0 matches the zeroed default used when unset
         }
         return freqs;
     }

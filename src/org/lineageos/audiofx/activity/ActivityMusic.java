@@ -12,12 +12,15 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.CompoundButton;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.graphics.Insets;
@@ -46,6 +49,14 @@ public class ActivityMusic extends Activity {
 
     private boolean mWaitingForService = true;
     private SharedPreferences.OnSharedPreferenceChangeListener mServiceReadyObserver;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private static final long SERVICE_START_TIMEOUT_MS = 10_000;
+    private final Runnable mServiceStartTimeout = () -> {
+        if (mWaitingForService && !isFinishing()) {
+            Toast.makeText(this, R.string.service_start_failed, Toast.LENGTH_LONG).show();
+            finish();
+        }
+    };
 
     private final CompoundButton.OnCheckedChangeListener mGlobalEnableToggleListener
             = new CompoundButton.OnCheckedChangeListener() {
@@ -104,7 +115,8 @@ public class ActivityMusic extends Activity {
             };
             globalPrefs.registerOnSharedPreferenceChangeListener(mServiceReadyObserver);
             startService(new Intent(ActivityMusic.this, AudioFxService.class));
-            // TODO add loading fragment if service initialization takes too long
+            // don't leave a blank screen up forever if the service can't start
+            mHandler.postDelayed(mServiceStartTimeout, SERVICE_START_TIMEOUT_MS);
         } else {
             init(savedInstanceState);
         }
@@ -128,6 +140,7 @@ public class ActivityMusic extends Activity {
 
     @Override
     protected void onDestroy() {
+        mHandler.removeCallbacks(mServiceStartTimeout);
         if (mServiceReadyObserver != null) {
             Constants.getGlobalPrefs(this)
                     .unregisterOnSharedPreferenceChangeListener(mServiceReadyObserver);

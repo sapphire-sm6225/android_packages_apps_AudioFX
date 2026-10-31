@@ -71,7 +71,7 @@ public class MasterConfigControl {
     private static MasterConfigControl sInstance;
     private boolean mShouldBindToService = false;
 
-    public static MasterConfigControl getInstance(Context context) {
+    public static synchronized MasterConfigControl getInstance(Context context) {
         if (sInstance == null) {
             sInstance = new MasterConfigControl(context);
         }
@@ -135,6 +135,10 @@ public class MasterConfigControl {
         if (mServiceRefCount > 0) {
             mServiceRefCount--;
             if (mServiceRefCount == 0) {
+                // onServiceDisconnected() is not called on a normal unbind, so drop the receiver
+                // here, otherwise it stays registered and is registered again on the next bind
+                LocalBroadcastManager.getInstance(mContext).unregisterReceiver(
+                        mDeviceChangeReceiver);
                 mContext.unbindService(mServiceConnection);
                 mService = null;
                 mServiceConnection = null;

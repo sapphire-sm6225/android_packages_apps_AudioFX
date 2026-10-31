@@ -88,7 +88,7 @@ public class EqualizerManager {
     public void applyDefaults() {
         mEqPresets.clear();
         // setup eq
-        int bands = Integer.parseInt(getGlobalPref("equalizer.number_of_bands", "5"));
+        int bands = Constants.parseInt(getGlobalPref("equalizer.number_of_bands", "5"), 5);
         final int[] centerFreqs = Constants.getCenterFreqs(mContext, bands);
         final int[] bandLevelRange = Constants.getBandLevelRange(mContext);
 
@@ -113,7 +113,7 @@ public class EqualizerManager {
                 / 2;
 
         // setup equalizer presets
-        final int numPresets = Integer.parseInt(getGlobalPref("equalizer.number_of_presets", "0"));
+        final int numPresets = Constants.parseInt(getGlobalPref("equalizer.number_of_presets", "0"), 0);
 
         if (numPresets > 0) {
             // add library-provided presets
@@ -136,7 +136,7 @@ public class EqualizerManager {
         mEqPresets.addAll(Constants.getCustomPresets(mContext));
 
         // setup default preset for speaker
-        mCurrentPreset = Integer.parseInt(getPref(Constants.DEVICE_AUDIOFX_EQ_PRESET, "0"));
+        mCurrentPreset = Constants.parseInt(getPref(Constants.DEVICE_AUDIOFX_EQ_PRESET, "0"), 0);
         if (mCurrentPreset > mEqPresets.size() - 1) {
             mCurrentPreset = 0;
         }
@@ -205,7 +205,7 @@ public class EqualizerManager {
 
     void onPreDeviceChanged() {
         // need to update the current preset based on the device here.
-        int newPreset = Integer.parseInt(getPref(Constants.DEVICE_AUDIOFX_EQ_PRESET, "0"));
+        int newPreset = Constants.parseInt(getPref(Constants.DEVICE_AUDIOFX_EQ_PRESET, "0"), 0);
         if (newPreset > mEqPresets.size() - 1) {
             newPreset = 0;
         }

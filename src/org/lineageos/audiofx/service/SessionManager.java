@@ -36,6 +36,9 @@ import org.lineageos.audiofx.backends.EffectSet;
 import org.lineageos.audiofx.backends.EffectsFactory;
 import org.lineageos.audiofx.eq.EqUtils;
 
+import java.util.ArrayList;
+import java.util.List;
+
 class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCallback {
 
     private static final String TAG = AudioFxService.TAG;
@@ -51,7 +54,7 @@ class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCall
     private final SparseArray<EffectSet> mAudioSessionsL = new SparseArray<EffectSet>();
 
 
-    private AudioDeviceInfo mCurrentDevice = null;
+    private volatile AudioDeviceInfo mCurrentDevice = null;
 
     // audio priority handler messages
     private static final int MSG_UPDATE_DSP = 100;
@@ -69,9 +72,17 @@ class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCall
     }
 
     public void onDestroy() {
+        mHandler.removeCallbacksAndMessages(null);
+        mHandler.getLooper().quit();
+        for (EffectSet session : snapshotSessions()) {
+            try {
+                session.release();
+            } catch (Exception e) {
+                Log.e(TAG, "Error releasing session on destroy", e);
+            }
+        }
         synchronized (mAudioSessionsL) {
-            mHandler.removeCallbacksAndMessages(null);
-            mHandler.getLooper().quit();
+            mAudioSessionsL.clear();
         }
     }
 
@@ -79,15 +90,11 @@ class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCall
         if (mHandler == null) {
             return;
         }
-        synchronized (mAudioSessionsL) {
-            mHandler.obtainMessage(MSG_UPDATE_DSP, flags, 0).sendToTarget();
-        }
+        mHandler.obtainMessage(MSG_UPDATE_DSP, flags, 0).sendToTarget();
     }
 
     public void setOverrideLevels(short band, float level) {
-        synchronized (mAudioSessionsL) {
-            mHandler.obtainMessage(MSG_UPDATE_EQ_OVERRIDE, band, 0, level).sendToTarget();
-        }
+        mHandler.obtainMessage(MSG_UPDATE_EQ_OVERRIDE, band, 0, level).sendToTarget();
     }
 
     public void addSession(int stream) {
@@ -241,112 +248,131 @@ class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCall
 
         @Override
         public boolean handleMessage(Message msg) {
-            synchronized (mAudioSessionsL) {
-                EffectSet session = null;
-                Integer sessionId = 0;
-                int flags = 0;
+            // an uncaught exception here would take the whole app down, so log and carry on
+            try {
+                handle(msg);
+            } catch (Exception e) {
+                Log.e(TAG, "error handling message " + msg.what, e);
+            }
+            return true;
+        }
 
-                switch (msg.what) {
-                    case MSG_ADD_SESSION:
-                        /**
-                         * msg.obj = sessionId
-                         */
-                        sessionId = (Integer) msg.obj;
-                        if (sessionId == null || sessionId <= 0) {
-                            break;
-                        }
+        /**
+         * The lock only guards the session map. Calls into the effects themselves run outside it,
+         * so a slow effect never blocks the UI thread, which takes the same lock.
+         */
+        private void handle(Message msg) {
+            EffectSet session;
+            Integer sessionId;
+            int flags;
 
-                        session = mAudioSessionsL.get(sessionId);
-                        if (session == null) {
-                            try {
-                                session = new EffectsFactory()
-                                        .createEffectSet(mContext, sessionId, mCurrentDevice);
-                            } catch (Exception e) {
-                                Log.e(TAG, "couldn't create effects for session id: " + sessionId,
-                                        e);
-                                break;
-                            }
-                            mAudioSessionsL.put(sessionId, session);
-                            if (DEBUG) Log.w(TAG, "added new EffectSet for sessionId=" + sessionId);
-                            updateBackendLocked(ALL_CHANGED, session);
-                        } else {
-                            session.setMarkedForDeath(false);
-                        }
+            switch (msg.what) {
+                case MSG_ADD_SESSION:
+                    // msg.obj = sessionId
+                    sessionId = (Integer) msg.obj;
+                    if (sessionId == null || sessionId <= 0) {
                         break;
+                    }
 
-                    case MSG_REMOVE_SESSION:
-                        /**
-                         * msg.obj = sessionId
-                         */
-                        sessionId = (Integer) msg.obj;
-                        if (sessionId == null || sessionId <= 0) {
-                            break;
-                        }
-
-                        session = mAudioSessionsL.get(sessionId);
-                        if (session != null && session.isMarkedForDeath()) {
-                            mHandler.removeMessages(MSG_UPDATE_FOR_SESSION, sessionId);
-                            session.release();
-                            mAudioSessionsL.remove(sessionId);
-                            if (DEBUG) Log.w(TAG, "removed and released sessionId=" + sessionId);
-                        }
-
-                        break;
-
-                    case MSG_UPDATE_DSP:
-                        /**
-                         * msg.arg1 = update what flags
-                         */
-                        flags = msg.arg1;
-
-                        final String mode = getCurrentDeviceIdentifier();
-                        if (DEBUG) Log.i(TAG, "Updating to configuration: " + mode);
-
-                        final int N = mAudioSessionsL.size();
-                        for (int i = 0; i < N; i++) {
-                            sessionId = mAudioSessionsL.keyAt(i);
-                            mHandler.obtainMessage(MSG_UPDATE_FOR_SESSION, flags, 0,
-                                    sessionId).sendToTarget();
-                        }
-                        break;
-
-                    case MSG_UPDATE_FOR_SESSION:
-                        /**
-                         * msg.arg1 = update what flags
-                         * msg.arg2 = unused
-                         * msg.obj = session id integer (for consistency)
-                         */
-                        sessionId = (Integer) msg.obj;
-                        flags = msg.arg1;
-
-                        if (sessionId == null || sessionId <= 0) {
-                            break;
-                        }
-
-                        String device = getCurrentDeviceIdentifier();
-                        if (DEBUG) {
-                            Log.i(TAG, "updating DSP for sessionId=" + sessionId +
-                                    ", device=" + device + " flags=" + flags);
-                        }
-
+                    synchronized (mAudioSessionsL) {
                         session = mAudioSessionsL.get(sessionId);
                         if (session != null) {
-                            updateBackendLocked(flags, session);
+                            session.setMarkedForDeath(false);
                         }
-                        break;
+                    }
+                    if (session == null) {
+                        try {
+                            session = new EffectsFactory()
+                                    .createEffectSet(mContext, sessionId, mCurrentDevice);
+                        } catch (Exception e) {
+                            Log.e(TAG, "couldn't create effects for session id: " + sessionId, e);
+                            break;
+                        }
+                        synchronized (mAudioSessionsL) {
+                            mAudioSessionsL.put(sessionId, session);
+                        }
+                        if (DEBUG) Log.w(TAG, "added new EffectSet for sessionId=" + sessionId);
+                        updateBackendLocked(ALL_CHANGED, session);
+                    }
+                    break;
 
-                    case MSG_UPDATE_EQ_OVERRIDE:
-                        for (int i = 0; i < mAudioSessionsL.size(); i++) {
-                            sessionId = mAudioSessionsL.keyAt(i);
-                            session = mAudioSessionsL.get(sessionId);
-                            if (session != null) {
-                                session.setEqualizerBandLevel((short) msg.arg1, (float) msg.obj);
-                            }
-                        }
+                case MSG_REMOVE_SESSION:
+                    // msg.obj = sessionId
+                    sessionId = (Integer) msg.obj;
+                    if (sessionId == null || sessionId <= 0) {
                         break;
-                }
-                return true;
+                    }
+
+                    synchronized (mAudioSessionsL) {
+                        session = mAudioSessionsL.get(sessionId);
+                        if (session != null && session.isMarkedForDeath()) {
+                            mAudioSessionsL.remove(sessionId);
+                        } else {
+                            session = null;
+                        }
+                    }
+                    if (session != null) {
+                        mHandler.removeMessages(MSG_UPDATE_FOR_SESSION, sessionId);
+                        session.release();
+                        if (DEBUG) Log.w(TAG, "removed and released sessionId=" + sessionId);
+                    }
+                    break;
+
+                case MSG_UPDATE_DSP:
+                    // msg.arg1 = update what flags
+                    flags = msg.arg1;
+                    if (DEBUG) Log.i(TAG, "Updating to configuration: "
+                            + getCurrentDeviceIdentifier());
+
+                    synchronized (mAudioSessionsL) {
+                        for (int i = 0; i < mAudioSessionsL.size(); i++) {
+                            mHandler.obtainMessage(MSG_UPDATE_FOR_SESSION, flags, 0,
+                                    mAudioSessionsL.keyAt(i)).sendToTarget();
+                        }
+                    }
+                    break;
+
+                case MSG_UPDATE_FOR_SESSION:
+                    // msg.arg1 = update what flags, msg.obj = session id integer
+                    sessionId = (Integer) msg.obj;
+                    flags = msg.arg1;
+
+                    if (sessionId == null || sessionId <= 0) {
+                        break;
+                    }
+                    if (DEBUG) {
+                        Log.i(TAG, "updating DSP for sessionId=" + sessionId
+                                + ", device=" + getCurrentDeviceIdentifier() + " flags=" + flags);
+                    }
+
+                    synchronized (mAudioSessionsL) {
+                        session = mAudioSessionsL.get(sessionId);
+                    }
+                    if (session != null) {
+                        updateBackendLocked(flags, session);
+                    }
+                    break;
+
+                case MSG_UPDATE_EQ_OVERRIDE:
+                    for (EffectSet s : snapshotSessions()) {
+                        try {
+                            s.setEqualizerBandLevel((short) msg.arg1, (float) msg.obj);
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error overriding band level", e);
+                        }
+                    }
+                    break;
             }
+        }
+    }
+
+    private List<EffectSet> snapshotSessions() {
+        synchronized (mAudioSessionsL) {
+            final List<EffectSet> sessions = new ArrayList<>(mAudioSessionsL.size());
+            for (int i = 0; i < mAudioSessionsL.size(); i++) {
+                sessions.add(mAudioSessionsL.valueAt(i));
+            }
+            return sessions;
         }
     }
 
@@ -355,21 +381,18 @@ class SessionManager implements AudioOutputChangeListener.AudioOutputChangedCall
      */
     @Override
     public void onAudioOutputChanged(boolean firstChange, AudioDeviceInfo outputDevice) {
-        synchronized (mAudioSessionsL) {
-            if (mCurrentDevice == null ||
-                    (outputDevice != null && mCurrentDevice.getId() != outputDevice.getId())) {
-                mCurrentDevice = outputDevice;
-            }
+        if (mCurrentDevice == null
+                || (outputDevice != null && mCurrentDevice.getId() != outputDevice.getId())) {
+            mCurrentDevice = outputDevice;
+        }
 
-            EffectSet session = null;
-
-            // Update all the sessions for this output which are moving
-            final int N = mAudioSessionsL.size();
-            for (int i = 0; i < N; i++) {
-                session = mAudioSessionsL.valueAt(i);
-
+        // Update all the sessions for this output which are moving
+        for (EffectSet session : snapshotSessions()) {
+            try {
                 session.setDevice(mCurrentDevice);
                 updateBackendLocked(ALL_CHANGED, session);
+            } catch (Exception e) {
+                Log.e(TAG, "Error moving session to new output", e);
             }
         }
     }

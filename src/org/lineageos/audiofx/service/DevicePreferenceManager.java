@@ -66,8 +66,11 @@ public class DevicePreferenceManager
         try {
             saveAndApplyDefaults(false);
         } catch (Exception e) {
-            SharedPreferences prefs = Constants.getGlobalPrefs(mContext);
-            prefs.edit().clear().apply();
+            // force a rebuild next time without throwing away the rest of the global prefs
+            Constants.getGlobalPrefs(mContext).edit()
+                    .remove(Constants.SAVED_DEFAULTS)
+                    .remove(Constants.AUDIOFX_GLOBAL_PREFS_VERSION_INT)
+                    .apply();
             Log.e(TAG, "Failed to initialize defaults!", e);
             return false;
         }
@@ -125,58 +128,60 @@ public class DevicePreferenceManager
             return;
         }
         EffectSet temp = new EffectsFactory().createEffectSet(mContext, 0, null);
+        try {
+            final int numBands = temp.getNumEqualizerBands();
+            final int numPresets = temp.getNumEqualizerPresets();
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putString(EQUALIZER_NUMBER_OF_PRESETS, String.valueOf(numPresets));
+            editor.putString(EQUALIZER_NUMBER_OF_BANDS, String.valueOf(numBands));
 
-        final int numBands = temp.getNumEqualizerBands();
-        final int numPresets = temp.getNumEqualizerPresets();
-        SharedPreferences.Editor editor = prefs.edit();
-        editor.putString(EQUALIZER_NUMBER_OF_PRESETS, String.valueOf(numPresets));
-        editor.putString(EQUALIZER_NUMBER_OF_BANDS, String.valueOf(numBands));
+            // range
+            short[] rangeShortArr = temp.getEqualizerBandLevelRange();
+            editor.putString(EQUALIZER_BAND_LEVEL_RANGE, rangeShortArr[0]
+                    + ";" + rangeShortArr[1]);
 
-        // range
-        short[] rangeShortArr = temp.getEqualizerBandLevelRange();
-        editor.putString(EQUALIZER_BAND_LEVEL_RANGE, rangeShortArr[0]
-                + ";" + rangeShortArr[1]);
+            // center freqs
+            StringBuilder centerFreqs = new StringBuilder();
+            // audiofx.global.centerfreqs
+            for (short i = 0; i < numBands; i++) {
+                centerFreqs.append(temp.getCenterFrequency(i));
+                centerFreqs.append(";");
 
-        // center freqs
-        StringBuilder centerFreqs = new StringBuilder();
-        // audiofx.global.centerfreqs
-        for (short i = 0; i < numBands; i++) {
-            centerFreqs.append(temp.getCenterFrequency(i));
-            centerFreqs.append(";");
-
-        }
-        centerFreqs.deleteCharAt(centerFreqs.length() - 1);
-        editor.putString(EQUALIZER_CENTER_FREQS, centerFreqs.toString());
-
-        // populate preset names
-        StringBuilder presetNames = new StringBuilder();
-        for (int i = 0; i < numPresets; i++) {
-            String presetName = temp.getEqualizerPresetName((short) i);
-            presetNames.append(presetName);
-            presetNames.append("|");
-
-            // populate preset band values
-            StringBuilder presetBands = new StringBuilder();
-            temp.useEqualizerPreset((short) i);
-
-            for (int j = 0; j < numBands; j++) {
-                // loop through preset bands
-                presetBands.append(temp.getEqualizerBandLevel((short) j));
-                presetBands.append(";");
             }
-            presetBands.deleteCharAt(presetBands.length() - 1);
-            editor.putString(EQUALIZER_PRESET + i, presetBands.toString());
-        }
-        if (presetNames.length() > 0) {
-            presetNames.deleteCharAt(presetNames.length() - 1);
-        }
-        editor.putString(EQUALIZER_PRESET_NAMES, presetNames.toString());
+            centerFreqs.deleteCharAt(centerFreqs.length() - 1);
+            editor.putString(EQUALIZER_CENTER_FREQS, centerFreqs.toString());
 
-        editor.putBoolean(AUDIOFX_GLOBAL_HAS_VIRTUALIZER, temp.hasVirtualizer());
-        editor.putBoolean(AUDIOFX_GLOBAL_HAS_REVERB, temp.hasReverb());
-        editor.putBoolean(AUDIOFX_GLOBAL_HAS_BASSBOOST, temp.hasBassBoost());
-        editor.apply();
-        temp.release();
+            // populate preset names
+            StringBuilder presetNames = new StringBuilder();
+            for (int i = 0; i < numPresets; i++) {
+                String presetName = temp.getEqualizerPresetName((short) i);
+                presetNames.append(presetName);
+                presetNames.append("|");
+
+                // populate preset band values
+                StringBuilder presetBands = new StringBuilder();
+                temp.useEqualizerPreset((short) i);
+
+                for (int j = 0; j < numBands; j++) {
+                    // loop through preset bands
+                    presetBands.append(temp.getEqualizerBandLevel((short) j));
+                    presetBands.append(";");
+                }
+                presetBands.deleteCharAt(presetBands.length() - 1);
+                editor.putString(EQUALIZER_PRESET + i, presetBands.toString());
+            }
+            if (presetNames.length() > 0) {
+                presetNames.deleteCharAt(presetNames.length() - 1);
+            }
+            editor.putString(EQUALIZER_PRESET_NAMES, presetNames.toString());
+
+            editor.putBoolean(AUDIOFX_GLOBAL_HAS_VIRTUALIZER, temp.hasVirtualizer());
+            editor.putBoolean(AUDIOFX_GLOBAL_HAS_REVERB, temp.hasReverb());
+            editor.putBoolean(AUDIOFX_GLOBAL_HAS_BASSBOOST, temp.hasBassBoost());
+            editor.apply();
+        } finally {
+            temp.release(); // also when reading the effect throws
+        }
 
         applyDefaults(needsPrefsUpdate);
 
@@ -233,11 +238,11 @@ public class DevicePreferenceManager
 
         // for 5 band configs, let's add a `Small Speaker` configuration if one
         // doesn't exist ( from oss AudioFX: -170;270;50;-220;200 )
-        if (Integer.parseInt(globalPrefs.getString(EQUALIZER_NUMBER_OF_BANDS, "0")) == 5 &&
+        if (Constants.parseInt(globalPrefs.getString(EQUALIZER_NUMBER_OF_BANDS, "0"), 0) == 5 &&
                 findInList(smallSpeakers, presetNames) < 0) {
 
-            int currentPresets = Integer.parseInt(
-                    globalPrefs.getString(EQUALIZER_NUMBER_OF_PRESETS, "0"));
+            int currentPresets = Constants.parseInt(
+                    globalPrefs.getString(EQUALIZER_NUMBER_OF_PRESETS, "0"), 0);
 
             presetNames.add(smallSpeakers);
             String newPresetNames = TextUtils.join("|", presetNames);

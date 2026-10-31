@@ -52,6 +52,7 @@ public class AudioFxService extends Service
     private AudioOutputChangeListener mOutputListener;
     private DevicePreferenceManager mDevicePrefs;
     private SessionManager mSessionManager;
+    private HandlerThread mHandlerThread;
     private Handler mHandler;
 
     private AudioDeviceInfo mCurrentDevice;
@@ -79,13 +80,17 @@ public class AudioFxService extends Service
 
         public void setOverrideLevels(short band, float level) {
             if (checkService()) {
-                mService.get().mSessionManager.setOverrideLevels(band, level);
+                final SessionManager sm = mService.get().mSessionManager;
+                if (sm != null) {
+                    sm.setOverrideLevels(band, level);
+                }
             }
         }
 
         public EffectSet getEffect(Integer id) {
             if (checkService()) {
-                return mService.get().mSessionManager.getEffectForSession(id);
+                final SessionManager sm = mService.get().mSessionManager;
+                return sm != null ? sm.getEffectForSession(id) : null;
             }
             return null;
         }
@@ -96,9 +101,9 @@ public class AudioFxService extends Service
         super.onCreate();
         if (DEBUG) Log.i(TAG, "Starting service.");
 
-        HandlerThread handlerThread = new HandlerThread("AudioFx-Backend");
-        handlerThread.start();
-        mHandler = new Handler(handlerThread.getLooper());
+        mHandlerThread = new HandlerThread("AudioFx-Backend");
+        mHandlerThread.start();
+        mHandler = new Handler(mHandlerThread.getLooper());
 
         mOutputListener = new AudioOutputChangeListener(getApplicationContext(), mHandler);
         mOutputListener.addCallback(this);
@@ -107,6 +112,10 @@ public class AudioFxService extends Service
 
         mDevicePrefs = new DevicePreferenceManager(getApplicationContext(), mCurrentDevice);
         if (!mDevicePrefs.initDefaults()) {
+            // nothing else was set up, so release what we have and let onStartCommand bail out
+            mOutputListener.removeCallback(this);
+            mOutputListener = null;
+            mHandlerThread.quitSafely();
             stopSelf();
             return;
         }
@@ -121,6 +130,11 @@ public class AudioFxService extends Service
         if (DEBUG) {
             Log.i(TAG, "onStartCommand() called with " + "intent = [" + intent + "], flags = ["
                     + flags + "], startId = [" + startId + "]");
+        }
+        if (mSessionManager == null) {
+            // onCreate failed (defaults could not be initialized)
+            stopSelf(startId);
+            return START_NOT_STICKY;
         }
         if (intent != null && intent.getAction() != null) {
             String action = intent.getAction();
@@ -160,9 +174,13 @@ public class AudioFxService extends Service
     public void onDestroy() {
         if (DEBUG) Log.i(TAG, "Stopping service.");
 
-        mOutputListener.removeCallback(this, mSessionManager, mDevicePrefs);
+        if (mOutputListener != null) {
+            mOutputListener.removeCallback(this, mSessionManager, mDevicePrefs);
+        }
         if (mSessionManager != null) {
             mSessionManager.onDestroy();
+        } else if (mHandlerThread != null) {
+            mHandlerThread.quitSafely();
         }
 
         super.onDestroy();
@@ -176,6 +194,9 @@ public class AudioFxService extends Service
     @Override
     public void onTrimMemory(int level) {
         if (DEBUG) Log.d(TAG, "onTrimMemory: level=" + level);
+        if (mHandler == null) {
+            return;
+        }
         switch (level) {
             case TRIM_MEMORY_BACKGROUND:
             case TRIM_MEMORY_MODERATE:
@@ -183,7 +204,7 @@ public class AudioFxService extends Service
             case TRIM_MEMORY_COMPLETE:
                 if (DEBUG) Log.d(TAG, "killing service if no effects active.");
                 mHandler.postDelayed(() -> {
-                    if (!mSessionManager.hasActiveSessions()) {
+                    if (mSessionManager == null || !mSessionManager.hasActiveSessions()) {
                         stopSelf();
                         Log.w(TAG, "self destructing, no sessions active and nothing to do.");
                     }
@@ -200,6 +221,8 @@ public class AudioFxService extends Service
      * Queue up a backend update.
      */
     private void update(int flags) {
-        mSessionManager.update(flags);
+        if (mSessionManager != null) {
+            mSessionManager.update(flags);
+        }
     }
 }

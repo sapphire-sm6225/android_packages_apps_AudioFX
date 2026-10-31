@@ -78,14 +78,14 @@ public class KnobCommander {
     }
 
     public int getVirtualizerStrength() {
-        return Integer.valueOf(
-                mConfig.getPrefs().getString(Constants.DEVICE_AUDIOFX_VIRTUALIZER_STRENGTH, "0"))
+        return Constants.parseInt(
+                mConfig.getPrefs().getString(Constants.DEVICE_AUDIOFX_VIRTUALIZER_STRENGTH, "0"), 0)
                 / 10;
     }
 
     public int getBassStrength() {
-        return Integer.valueOf(
-                mConfig.getPrefs().getString(Constants.DEVICE_AUDIOFX_BASS_STRENGTH, "0")) / 10;
+        return Constants.parseInt(
+                mConfig.getPrefs().getString(Constants.DEVICE_AUDIOFX_BASS_STRENGTH, "0"), 0) / 10;
     }
 
     public void setBassEnabled(boolean on) {
