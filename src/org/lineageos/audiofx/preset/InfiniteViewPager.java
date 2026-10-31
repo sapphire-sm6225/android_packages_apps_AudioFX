@@ -50,10 +50,8 @@ public class InfiniteViewPager extends ViewPager {
 
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int textSize = getResources().getDimensionPixelSize(R.dimen.preset_text_size)
-                + getResources().getDimensionPixelSize(R.dimen.preset_text_padding);
-        super.onMeasure(widthMeasureSpec,
-                MeasureSpec.makeMeasureSpec(textSize, MeasureSpec.EXACTLY));
+        // the preset name is shown by the chips; the pager only drives swiping and state
+        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(1, MeasureSpec.EXACTLY));
     }
 
     @Override

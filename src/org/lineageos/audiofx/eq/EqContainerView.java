@@ -68,6 +68,7 @@ public class EqContainerView extends FrameLayout
     private Paint mFreqPaint;
     private Paint mSelectedFreqPaint;
     private Paint mCenterLinePaint;
+    private final Paint mScalePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final android.graphics.RectF mTrackRect = new android.graphics.RectF();
     private Path mDashPath;
@@ -160,6 +161,9 @@ public class EqContainerView extends FrameLayout
         mSelectedBandColor = r.getColor(R.color.afx_accent, mContext.getTheme());
         final int onSurface = r.getColor(R.color.afx_on_surface, mContext.getTheme());
 
+        final int variant = r.getColor(R.color.afx_on_surface_variant, mContext.getTheme());
+        mScalePaint.setColor(variant);
+        mScalePaint.setTextSize(r.getDimension(R.dimen.eq_label_text_size));
         mTrackPaint.setColor(r.getColor(R.color.afx_track, mContext.getTheme()));
 
         mTextPaint = new Paint();
@@ -171,7 +175,7 @@ public class EqContainerView extends FrameLayout
 
         mFreqPaint = new Paint();
         mFreqPaint.setAntiAlias(true);
-        mFreqPaint.setColor(onSurface);
+        mFreqPaint.setColor(variant);
         mFreqPaint.setTextAlign(Paint.Align.CENTER);
         mFreqPaint.setTextSize(freqTextSize);
 
@@ -271,7 +275,7 @@ public class EqContainerView extends FrameLayout
                 bar.setParentHeight(mHeight, getTop());
 
                 final float freq = mEqManager.getCenterFreq(i);
-                band.mFreq = String.format(freq < 1000 ? "%.0f" : "%.0fk",
+                band.mFreq = String.format(freq < 1000 ? "%.0f Hz" : "%.0f kHz",
                         freq < 1000 ? freq : freq / 1000);;
                 mBarViews.add(bar);
             }
@@ -404,18 +408,25 @@ public class EqContainerView extends FrameLayout
 
         canvas.drawPath(mDashPath, mCenterLinePaint);
 
+        // dB scale on the left: max at the top of the tracks, 0 on the dashed line, min at the bottom
+        final float scaleX = getResources().getDisplayMetrics().density * 8;
+        final float half = mScalePaint.getTextSize() / 3f;
+        mScalePaint.setTextAlign(Paint.Align.LEFT);
+        canvas.drawText(String.format("%+d dB", Math.round(mEqManager.getMaxDB())), scaleX,
+                mPaddingTop + half, mScalePaint);
+        canvas.drawText("0 dB", scaleX, mPaddingTop + (mHeight / 2f) + half, mScalePaint);
+        canvas.drawText(String.format("%d dB", Math.round(mEqManager.getMinDB())), scaleX,
+                mPaddingTop + mHeight + half, mScalePaint);
+
         for (int i = 0; i < mBandInfo.size(); i++) {
             EqBandInfo info = mBandInfo.get(i);
 
             final float x = info.mBar.getX() + (info.mBar.getWidth() / 2f);
             final boolean userInteracting = info.mBar.isUserInteracting();
-            if (userInteracting) {
-                canvas.drawText(
-                        info.mDb,
-                        x,
-                        info.mBar.getY() - (mTextPaint.getTextSize() / 2),
-                        mTextPaint);
-            }
+            // current level above the handle, always visible
+            final float level = mEqManager.getLevel(i);
+            canvas.drawText(String.format("%+d", Math.round(level)).replace("+0", "0"), x,
+                    info.mBar.getY() - (mTextPaint.getTextSize() / 2), mTextPaint);
 
             Paint drawPaint = userInteracting ? mSelectedFreqPaint : mFreqPaint;
 

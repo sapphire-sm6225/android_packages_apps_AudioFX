@@ -16,7 +16,7 @@
             android:layout_height="36dp"
             android:layout_marginStart="16dp"
             android:layout_marginTop="8dp"
-            android:background="@drawable/preset_chip_background"
+            android:background="@drawable/device_chip_background"
             android:clickable="true"
             android:focusable="true"
             android:drawablePadding="8dp"
@@ -49,7 +49,10 @@
               android:id="@+id/controls"
               android:layout_weight="0"
               android:layout_width="match_parent"
-              android:layout_height="160dp"/>
+              android:layout_height="wrap_content"
+              android:layout_marginStart="16dp"
+              android:layout_marginEnd="16dp"
+              android:layout_marginBottom="12dp"/>
 
 </org.lineageos.audiofx.widget.InterceptableLinearLayout>
 
