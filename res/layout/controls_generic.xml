@@ -8,8 +8,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="164dp"
-    android:background="@color/afx_card"
-    android:elevation="8dp"
+    android:background="@drawable/controls_background"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="4dp">

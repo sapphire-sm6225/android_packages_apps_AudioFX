@@ -23,6 +23,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
+import android.widget.HorizontalScrollView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -52,6 +54,8 @@ public class EqualizerFragment extends AudioFxBaseFragment
     public EqContainerView mEqContainer;
     InfiniteViewPager mPresetPager;
     CirclePageIndicator mPresetPageIndicator;
+    private HorizontalScrollView mChipScroll;
+    private LinearLayout mChipRow;
     PresetPagerAdapter mDataAdapter;
     InfinitePagerAdapter mInfiniteAdapter;
     int mCurrentRealPage;
@@ -135,6 +139,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
             mPresetPageIndicator.notifyDataSetChanged();
 
             jumpToPreset(mSelectedPosition - 1);
+            refreshChips();
         }
     }
 
@@ -151,6 +156,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
             viewWithTag.setText(newName.getText().toString());
             mDataAdapter.notifyDataSetChanged();
             mPresetPager.invalidate();
+            refreshChips();
         });
 
         renameDialog.setNegativeButton(android.R.string.cancel, null);
@@ -194,6 +200,8 @@ public class EqualizerFragment extends AudioFxBaseFragment
         mPresetPager = (InfiniteViewPager) view.findViewById(R.id.pager);
         mPresetPageIndicator = view.findViewById(R.id.indicator);
         mFakePager = view.findViewById(R.id.fake_pager);
+        mChipScroll = view.findViewById(R.id.preset_chip_scroll);
+        mChipRow = view.findViewById(R.id.preset_chips);
 
         mEqContainer.findViewById(R.id.save).setOnClickListener(v -> {
             final int newidx = mEqManager.addPresetFromCustom();
@@ -202,6 +210,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
             mPresetPageIndicator.notifyDataSetChanged();
 
             jumpToPreset(newidx);
+            refreshChips();
         });
         mEqContainer.findViewById(R.id.rename).setOnClickListener(v -> {
             if (mEqManager.isUserPreset()) {
@@ -232,6 +241,45 @@ public class EqualizerFragment extends AudioFxBaseFragment
 
         mFakePager.setCurrentItem(mSelectedPosition);
         mPresetPager.setCurrentItem(mSelectedPosition);
+        refreshChips();
+    }
+
+    /** Rebuild the preset chip row from the current presets and highlight the selected one. */
+    private void refreshChips() {
+        if (mChipRow == null || getActivity() == null) {
+            return;
+        }
+        mChipRow.removeAllViews();
+        final LayoutInflater inflater = LayoutInflater.from(getActivity());
+        View selected = null;
+        for (int i = 0; i < mEqManager.getPresetCount(); i++) {
+            final int index = i;
+            final TextView chip = (TextView) inflater.inflate(R.layout.preset_chip, mChipRow,
+                    false);
+            chip.setText(mEqManager.getLocalizedPresetName(i));
+            chip.setSelected(i == mSelectedPosition);
+            chip.setOnClickListener(v -> selectPresetFromChip(index));
+            mChipRow.addView(chip);
+            if (i == mSelectedPosition) {
+                selected = chip;
+            }
+        }
+        if (selected != null) {
+            final View target = selected;
+            mChipScroll.post(() -> mChipScroll.smoothScrollTo(
+                    Math.max(0, target.getLeft() - mChipScroll.getWidth() / 4), 0));
+        }
+    }
+
+    private void selectPresetFromChip(int index) {
+        if (index == mSelectedPosition || mEqManager.isAnimatingToCustom() || mDeviceChanging) {
+            return;
+        }
+        jumpToPreset(index);
+        mEqManager.setPreset(index);
+        mSelectedPosition = index;
+        mSelectedPositionBands = mEqManager.getPresetLevels(index);
+        refreshChips();
     }
 
     @Override
@@ -251,6 +299,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
                 mInfiniteAdapter.notifyDataSetChanged();
                 mDataAdapter.notifyDataSetChanged();
                 mPresetPager.getAdapter().notifyDataSetChanged();
+                refreshChips();
                 // do background transition manually as viewpager can't handle this bg change
                 final Integer colorTo = !mConfig.isCurrentDeviceEnabled()
                         ? getDisabledColor()
@@ -292,6 +341,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
     @Override
     public void onPresetsChanged() {
         mDataAdapter.notifyDataSetChanged();
+        refreshChips();
     }
 
     @Override
@@ -480,6 +530,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
                     if (DEBUG_VIEWPAGER) Log.e(TAG, "onPageSelected(" + position + ")");
                     mFakePager.setCurrentItem(position);
                     mSelectedPosition = position;
+                    refreshChips();
                     if (!mDeviceChanging) {
                         mSelectedPositionBands = mEqManager.getPresetLevels(mSelectedPosition);
                     }

@@ -13,7 +13,10 @@
             layout="@layout/eq_container"
             android:layout_weight="1"
             android:layout_width="match_parent"
-            android:layout_height="0dp"/>
+            android:layout_height="0dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"/>
 
     <LinearLayout
             android:orientation="vertical"
@@ -28,10 +31,26 @@
 
         <org.lineageos.audiofx.viewpagerindicator.CirclePageIndicator
                 android:id="@+id/indicator"
-                android:padding="10dip"
+                android:visibility="gone"
                 android:layout_height="wrap_content"
                 android:layout_width="match_parent"
         />
+
+        <HorizontalScrollView
+                android:id="@+id/preset_chip_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:clipToPadding="false"
+                android:paddingStart="16dp"
+                android:paddingEnd="8dp"
+                android:paddingBottom="12dp">
+            <LinearLayout
+                    android:id="@+id/preset_chips"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" />
+        </HorizontalScrollView>
 
         <androidx.viewpager.widget.ViewPager
                 android:layout_height="0dp"

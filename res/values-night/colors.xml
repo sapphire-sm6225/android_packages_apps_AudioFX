@@ -15,4 +15,5 @@
     <color name="afx_accent">@android:color/system_accent1_200</color>
     <color name="afx_arc_bg">@android:color/system_neutral2_700</color>
     <color name="afx_popup">@android:color/system_neutral2_700</color>
+    <color name="afx_on_accent">@android:color/system_accent1_800</color>
 </resources>
