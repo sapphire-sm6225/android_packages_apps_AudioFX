@@ -7,6 +7,8 @@
 package org.lineageos.audiofx.eq;
 
 import android.content.Context;
+import android.graphics.Paint;
+import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -54,9 +56,36 @@ public class EqBarView extends FrameLayout implements StateCallbacks.EqUpdatedCa
         init();
     }
 
+    private final Paint mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF mRect = new RectF();
+    private float mTrackWidth;
+    private float mHandleHeight;
+    private float mHandleGap;
+
     private void init() {
+        setWillNotDraw(false);
+        final android.content.res.Resources res = getResources();
+        mTrackWidth = res.getDimension(R.dimen.eq_track_width);
+        mHandleHeight = res.getDimension(R.dimen.eq_handle_height);
+        mHandleGap = res.getDimension(R.dimen.eq_handle_gap);
+        mPaint.setColor(res.getColor(R.color.afx_accent, null));
         mEqManager = MasterConfigControl.getInstance(mContext).getEqualizerManager();
         mNormalWidth = getResources().getDimension(R.dimen.eq_bar_width);
+    }
+
+    @Override
+    protected void onDraw(android.graphics.Canvas canvas) {
+        super.onDraw(canvas);
+        // handle on top, a gap, then the rounded fill down to the bottom
+        final float cx = getWidth() / 2f;
+        final float h = getHeight();
+        mRect.set(cx - mNormalWidth / 2f, 0, cx + mNormalWidth / 2f, mHandleHeight);
+        canvas.drawRoundRect(mRect, mHandleHeight / 2f, mHandleHeight / 2f, mPaint);
+        final float fillTop = mHandleHeight + mHandleGap;
+        if (h > fillTop) {
+            mRect.set(cx - mTrackWidth / 2f, fillTop, cx + mTrackWidth / 2f, h);
+            canvas.drawRoundRect(mRect, mTrackWidth / 2f, mTrackWidth / 2f, mPaint);
+        }
     }
 
     @Override

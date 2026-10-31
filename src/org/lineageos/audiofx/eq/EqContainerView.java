@@ -68,6 +68,8 @@ public class EqContainerView extends FrameLayout
     private Paint mFreqPaint;
     private Paint mSelectedFreqPaint;
     private Paint mCenterLinePaint;
+    private final Paint mTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final android.graphics.RectF mTrackRect = new android.graphics.RectF();
     private Path mDashPath;
 
     private Context mContext;
@@ -157,6 +159,8 @@ public class EqContainerView extends FrameLayout
 
         mSelectedBandColor = r.getColor(R.color.afx_accent, mContext.getTheme());
         final int onSurface = r.getColor(R.color.afx_on_surface, mContext.getTheme());
+
+        mTrackPaint.setColor(r.getColor(R.color.afx_track, mContext.getTheme()));
 
         mTextPaint = new Paint();
         mTextPaint.setAntiAlias(true);
@@ -258,11 +262,10 @@ public class EqContainerView extends FrameLayout
 
                 // set correct initial alpha
                 if (i % 2 == 0) {
-                    bar.setAlpha(0.6f);
+                    bar.setAlpha(1f);
                 } else {
-                    bar.setAlpha(0.8f);
+                    bar.setAlpha(1f);
                 }
-                bar.setBackgroundColor(mSelectedBandColor);
 
                 addView(bar, getFrameParams(i));
                 bar.setParentHeight(mHeight, getTop());
@@ -334,7 +337,10 @@ public class EqContainerView extends FrameLayout
             return;
         }
 
-        int dashY = bottom - mPaddingBottom - (mHeight / 2);
+        // child coordinates are relative to this view, not to its parent
+        final int w = right - left;
+        final int h = bottom - top;
+        int dashY = h - mPaddingBottom - (mHeight / 2);
 
         final int widthOfBars = (mEqManager.getNumBands() * mBarWidth)
                 + ((mEqManager.getNumBands() - 1) * mBarSeparation);
@@ -359,7 +365,7 @@ public class EqContainerView extends FrameLayout
                     r += childWidth / 4;
                 }
 
-                final int layoutTop = top + mHeight - childHeight + mPaddingTop;
+                final int layoutTop = mHeight - childHeight + mPaddingTop;
                 final int layoutBottom = layoutTop + childHeight
                         + mPaddingBottom - (mPaddingBottom - mBarBottomGrabSpacePadding);
                 child.layout(l, layoutTop, r, layoutBottom);
@@ -374,10 +380,10 @@ public class EqContainerView extends FrameLayout
         }
 
         mControls.layout(
-                right - mControls.getMeasuredWidth() - mControls.getPaddingLeft(),
-                top + mControls.getPaddingTop(),
-                right - mControls.getPaddingRight(),
-                top + mControls.getMeasuredHeight() + mControls.getPaddingTop()
+                w - mControls.getMeasuredWidth() - mControls.getPaddingLeft(),
+                mControls.getPaddingTop(),
+                w - mControls.getPaddingRight(),
+                mControls.getMeasuredHeight() + mControls.getPaddingTop()
                         + mControls.getPaddingBottom()
         );
     }
@@ -386,6 +392,15 @@ public class EqContainerView extends FrameLayout
     @Override
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
+
+        // full-height rounded track behind each bar
+        final float tw = getResources().getDimension(R.dimen.eq_track_width);
+        for (int i = 0; i < mBandInfo.size(); i++) {
+            final EqBarView bar = mBandInfo.get(i).mBar;
+            final float cx = bar.getX() + (bar.getWidth() / 2f);
+            mTrackRect.set(cx - tw / 2f, mPaddingTop, cx + tw / 2f, bar.getBottom());
+            canvas.drawRoundRect(mTrackRect, tw / 2f, tw / 2f, mTrackPaint);
+        }
 
         canvas.drawPath(mDashPath, mCenterLinePaint);
 
@@ -418,13 +433,12 @@ public class EqContainerView extends FrameLayout
                 final ViewPropertyAnimator barAnimation = bar.animate().withLayer();
                 if (mSelectedBands.isEmpty()) {
                     if (i % 2 == 0) {
-                        barAnimation.alpha(0.6f);
+                        barAnimation.alpha(1f);
                     } else {
-                        barAnimation.alpha(0.8f);
+                        barAnimation.alpha(1f);
                     }
                 } else if (mSelectedBands.contains(i)) {
                     barAnimation.alpha(1f);
-                    bar.setBackgroundColor(mSelectedBandColor);
                 } else {
                     barAnimation.alpha(0.40f);
                 }

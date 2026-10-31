@@ -21,8 +21,12 @@
     <dimen name="preset_text_size">20sp</dimen>
     <dimen name="preset_text_padding">4dp</dimen>
 
-    <dimen name="eq_bar_width">24dp</dimen>
-    <dimen name="separator_width">4dp</dimen>
+    <dimen name="eq_bar_width">36dp</dimen>
+    <!-- visible track/fill width, the handle uses the full bar width -->
+    <dimen name="eq_track_width">24dp</dimen>
+    <dimen name="eq_handle_height">5dp</dimen>
+    <dimen name="eq_handle_gap">4dp</dimen>
+    <dimen name="separator_width">14dp</dimen>
 
     <dimen name="knob_width">100dp</dimen>
     <dimen name="knob_container_padding_bottom">8dp</dimen>
