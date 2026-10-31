@@ -204,7 +204,7 @@ public class RadialKnob extends View {
         if (mEnabled) {
             return ((int) (mProgress * 100)) + "%";
         } else {
-            return "--";
+            return "N/A";
         }
     }
 

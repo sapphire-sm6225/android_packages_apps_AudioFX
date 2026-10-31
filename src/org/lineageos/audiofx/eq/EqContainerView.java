@@ -69,6 +69,8 @@ public class EqContainerView extends FrameLayout
     private Paint mSelectedFreqPaint;
     private Paint mCenterLinePaint;
     private final Paint mScalePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mTitlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint mSubtitlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint mTrackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final android.graphics.RectF mTrackRect = new android.graphics.RectF();
     private Path mDashPath;
@@ -146,7 +148,8 @@ public class EqContainerView extends FrameLayout
 
         int extraTopSpace = r.getDimensionPixelSize(R.dimen.eq_bar_top_padding);
 
-        mPaddingTop = selectedBoxTextSize + extraTopSpace;
+        mPaddingTop = selectedBoxTextSize + extraTopSpace
+                + r.getDimensionPixelSize(R.dimen.eq_header_height);
         mPaddingBottom = selectedBoxTextSize + mBarBottomGrabSpacePadding;
 
         mConfig = MasterConfigControl.getInstance(mContext);
@@ -162,6 +165,13 @@ public class EqContainerView extends FrameLayout
         final int onSurface = r.getColor(R.color.afx_on_surface, mContext.getTheme());
 
         final int variant = r.getColor(R.color.afx_on_surface_variant, mContext.getTheme());
+        final float density = r.getDisplayMetrics().density;
+        mTitlePaint.setColor(r.getColor(R.color.afx_on_surface, mContext.getTheme()));
+        mTitlePaint.setTextSize(18 * density);
+        mTitlePaint.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
+                android.graphics.Typeface.NORMAL));
+        mSubtitlePaint.setColor(variant);
+        mSubtitlePaint.setTextSize(14 * density);
         mScalePaint.setColor(variant);
         mScalePaint.setTextSize(r.getDimension(R.dimen.eq_label_text_size));
         mTrackPaint.setColor(r.getColor(R.color.afx_track, mContext.getTheme()));
@@ -397,6 +407,13 @@ public class EqContainerView extends FrameLayout
     protected void onDraw(@NonNull Canvas canvas) {
         super.onDraw(canvas);
 
+        // card header: title and the current preset
+        final float d = getResources().getDisplayMetrics().density;
+        canvas.drawText(getResources().getString(R.string.eq_title), 20 * d, 34 * d, mTitlePaint);
+        canvas.drawText(getResources().getString(R.string.eq_preset_format,
+                mEqManager.getLocalizedPresetName(mEqManager.getCurrentPresetIndex())),
+                20 * d, 54 * d, mSubtitlePaint);
+
         // full-height rounded track behind each bar
         final float tw = getResources().getDimension(R.dimen.eq_track_width);
         for (int i = 0; i < mBandInfo.size(); i++) {
@@ -475,6 +492,7 @@ public class EqContainerView extends FrameLayout
     @Override
     public void onPresetChanged(int newPresetIndex) {
         updateEqState();
+        invalidate();
         if (mEqManager.isUserPreset()) {
             mLockBox.setChecked(mEqManager.isEqualizerLocked());
         }

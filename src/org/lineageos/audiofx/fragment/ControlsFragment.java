@@ -33,6 +33,7 @@ public class ControlsFragment extends AudioFxBaseFragment {
     KnobCommander mKnobCommander;
     KnobContainer mKnobContainer;
     MaterialSwitch mReverbSwitch;
+    android.widget.TextView mEffectsHint;
 
     private final CompoundButton.OnCheckedChangeListener mReverbListener
             = (buttonView, isChecked) -> mConfig.setReverbEnabled(isChecked);
@@ -81,6 +82,12 @@ public class ControlsFragment extends AudioFxBaseFragment {
             Log.d(TAG, "updating with current device: " + device.getType());
         }
 
+        if (mEffectsHint != null) {
+            mEffectsHint.setVisibility(device != null
+                    && device.getType() == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
+                    ? View.VISIBLE : View.GONE);
+        }
+
         if (mReverbSwitch != null) {
             mReverbSwitch.setChecked(mConfig.getReverbEnabled());
             mReverbSwitch.setEnabled(currentDeviceEnabled);
@@ -117,6 +124,7 @@ public class ControlsFragment extends AudioFxBaseFragment {
 
         mKnobContainer = view.findViewById(R.id.knob_container);
         mReverbSwitch = view.findViewById(R.id.reverb_switch);
+        mEffectsHint = view.findViewById(R.id.effects_hint);
 
         updateFragmentBackgroundColors(getCurrentBackgroundColor());
 

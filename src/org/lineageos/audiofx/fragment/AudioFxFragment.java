@@ -217,6 +217,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
     public void updateEnabledState() {
         boolean currentDeviceEnabled = mConfig.isCurrentDeviceEnabled();
         dimContent(currentDeviceEnabled);
+        updateHeaderStatus(currentDeviceEnabled);
         if (mEqFragment != null) {
             mEqFragment.updateEnabledState();
         }
@@ -345,6 +346,18 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
         popup.show();
     }
 
+    private void updateHeaderStatus(boolean enabled) {
+        final android.app.ActionBar bar = getActivity() == null ? null
+                : getActivity().getActionBar();
+        final AudioDeviceInfo device = mConfig.getCurrentDevice();
+        if (bar == null || device == null) {
+            return;
+        }
+        bar.setSubtitle(getString(R.string.header_status_format,
+                MasterConfigControl.getDeviceDisplayString(getActivity(), device),
+                getString(enabled ? R.string.effects_on : R.string.effects_off)));
+    }
+
     /** Off state: fade the content instead of recolouring the whole screen. */
     private void dimContent(boolean enabled) {
         final float alpha = enabled ? 1f : 0.4f;
@@ -468,6 +481,7 @@ public class AudioFxFragment extends Fragment implements StateCallbacks.DeviceCh
     @Override
     public void onGlobalDeviceToggle(final boolean checked) {
         dimContent(checked);
+        updateHeaderStatus(checked);
         final CompoundButton buttonView = getGlobalSwitch();
         final Animator.AnimatorListener animatorListener = new Animator.AnimatorListener() {
             @Override

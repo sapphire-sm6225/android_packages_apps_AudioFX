@@ -10,4 +10,10 @@
     <string name="picker_title">Music effects control panel</string>
     <string name="service_start_failed">Audio effects could not be started. Please try again.</string>
     <string name="effects_title">Effects</string>
+    <string name="eq_title">Equalizer</string>
+    <string name="eq_preset_format">%1$s preset</string>
+    <string name="header_status_format">%1$s \u00b7 %2$s</string>
+    <string name="effects_on">effects on</string>
+    <string name="effects_off">effects off</string>
+    <string name="effects_speaker_hint">Bass boost and Virtualizer are available on headphones, Bluetooth and USB audio.</string>
 </resources>
