@@ -21,7 +21,7 @@ jobs:
           # AGP wants namespace in gradle, not in the manifest
           sed -E 's/ package="[^"]*"//; s/ android:version(Code|Name)="[^"]*"//; /<uses-sdk/d' AndroidManifest.xml > "$S/AndroidManifest.xml"
           echo "sdk.dir=$ANDROID_HOME" > "$S/local.properties"
-          echo "rootProject.name='scaffold'" > "$S/settings.gradle"
+          printf "pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\nrootProject.name='scaffold'\n" > "$S/settings.gradle"
           cat > "$S/build.gradle" <<GRADLE
           plugins { id 'com.android.application' version '8.7.3' }
           repositories { google(); mavenCentral() }
