@@ -1,0 +1,55 @@
+name: check-res
+# Fast pre-build checks (about 2-3 min instead of a full ROM build):
+#  1. resources link against the real library resources (material, androidx) and public android.jar
+#  2. Java files parse, every R.x.y used in src/ exists, manifest classes exist
+# It does not compile the Java (the app uses hidden platform APIs).
+on:
+  push:
+  pull_request:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - uses: gradle/actions/setup-gradle@v4
+        with: { gradle-version: 8.10.2 }
+      - name: link resources with gradle (resources only)
+        run: |
+          S="$RUNNER_TEMP/scaffold"; mkdir -p "$S"
+          # AGP wants namespace in gradle, not in the manifest
+          sed -E 's/ package="[^"]*"//; s/ android:version(Code|Name)="[^"]*"//; /<uses-sdk/d' AndroidManifest.xml > "$S/AndroidManifest.xml"
+          echo "sdk.dir=$ANDROID_HOME" > "$S/local.properties"
+          echo "rootProject.name='scaffold'" > "$S/settings.gradle"
+          cat > "$S/build.gradle" <<GRADLE
+          plugins { id 'com.android.application' version '8.7.3' }
+          repositories { google(); mavenCentral() }
+          android {
+              namespace 'org.lineageos.audiofx'
+              compileSdk 35
+              defaultConfig { minSdk 31; targetSdk 35 }
+              sourceSets.main {
+                  manifest.srcFile 'AndroidManifest.xml'
+                  res.srcDirs = ['$GITHUB_WORKSPACE/res']
+                  java.srcDirs = []
+              }
+          }
+          dependencies {
+              implementation 'androidx.core:core:1.13.1'
+              implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+              implementation 'androidx.viewpager:viewpager:1.0.0'
+              implementation 'com.google.android.material:material:1.12.0'
+          }
+          GRADLE
+          sed -i 's/^          //' "$S/build.gradle"
+          cd "$S" && gradle --no-daemon -q processDebugResources > "$RUNNER_TEMP/g.txt" 2>&1 && exit 0
+          echo "::error::$(grep -E 'error|Error|FAILED|not found|private' "$RUNNER_TEMP/g.txt" | head -8 | cut -c1-300 | tr '\n' '|')"
+          tail -40 "$RUNNER_TEMP/g.txt"; exit 1
+      - name: java syntax, R.* references, manifest classes
+        run: |
+          pip install -q javalang
+          R=$(find "$RUNNER_TEMP/scaffold/build" -name R.txt | head -1)
+          python3 .github/scripts/check.py "$R" > "$RUNNER_TEMP/c.txt" 2>&1 && { cat "$RUNNER_TEMP/c.txt"; exit 0; }
+          echo "::error::$(head -c 1500 "$RUNNER_TEMP/c.txt" | tr '\n' '|')"
+          cat "$RUNNER_TEMP/c.txt"; exit 1
