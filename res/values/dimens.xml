@@ -7,7 +7,7 @@
 -->
 <resources>
     <!-- size of frequency labels below bars -->
-    <dimen name="eq_label_text_size">11sp</dimen>
+    <dimen name="eq_label_text_size">12sp</dimen>
 
     <!-- size of selected frequency/db text sizes [both right now ] -->
     <dimen name="eq_selected_box_height">15sp</dimen>
