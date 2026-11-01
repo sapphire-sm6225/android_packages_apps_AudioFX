@@ -361,7 +361,9 @@ public class EqContainerView extends FrameLayout
                 + ((mEqManager.getNumBands() - 1) * mBarSeparation);
         final int freeSpace = mWidth - widthOfBars;
 
-        int mCurLeft = (freeSpace / 2);
+        // leave room on the left for the dB scale
+        final int scaleGutter = (int) (10 * getResources().getDisplayMetrics().density);
+        int mCurLeft = (freeSpace / 2) + scaleGutter;
         final int childCount = getChildCount();
         for (int i = 0; i < childCount; i++) {
             final View child = getChildAt(i);
@@ -390,8 +392,8 @@ public class EqContainerView extends FrameLayout
         if (changed || mDashPath == null) {
             mDashPath = new Path();
             mDashPath.reset();
-            mDashPath.moveTo(freeSpace / 2f, dashY);
-            mDashPath.lineTo(widthOfBars + (freeSpace / 2f), dashY);
+            mDashPath.moveTo(freeSpace / 2f + scaleGutter, dashY);
+            mDashPath.lineTo(widthOfBars + (freeSpace / 2f) + scaleGutter, dashY);
         }
 
         mControls.layout(
@@ -427,7 +429,7 @@ public class EqContainerView extends FrameLayout
         canvas.drawPath(mDashPath, mCenterLinePaint);
 
         // dB scale on the left: max at the top of the tracks, 0 on the dashed line, min at the bottom
-        final float scaleX = getResources().getDisplayMetrics().density * 8;
+        final float scaleX = getResources().getDisplayMetrics().density * 20; // same edge as the title
         final float half = mScalePaint.getTextSize() / 3f;
         mScalePaint.setTextAlign(Paint.Align.LEFT);
         canvas.drawText(String.format("%+d dB", Math.round(mEqManager.getMaxDB())), scaleX,
