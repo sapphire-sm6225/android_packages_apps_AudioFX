@@ -150,7 +150,8 @@ public class EqContainerView extends FrameLayout
 
         mPaddingTop = selectedBoxTextSize + extraTopSpace
                 + r.getDimensionPixelSize(R.dimen.eq_header_height);
-        mPaddingBottom = selectedBoxTextSize + mBarBottomGrabSpacePadding;
+        mPaddingBottom = selectedBoxTextSize + mBarBottomGrabSpacePadding
+                + r.getDimensionPixelSize(R.dimen.eq_bottom_padding);
 
         mConfig = MasterConfigControl.getInstance(mContext);
         mEqManager = mConfig.getEqualizerManager();
@@ -181,7 +182,7 @@ public class EqContainerView extends FrameLayout
         mTextPaint.setColor(onSurface);
         mTextPaint.setTextAlign(Paint.Align.CENTER);
         mTextPaint.setElegantTextHeight(true);
-        mTextPaint.setTextSize(selectedBoxTextSize);
+        mTextPaint.setTextSize(13 * r.getDisplayMetrics().density);
 
         mFreqPaint = new Paint();
         mFreqPaint.setAntiAlias(true);
