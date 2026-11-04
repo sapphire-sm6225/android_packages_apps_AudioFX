@@ -67,6 +67,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
 
     private int mAnimatingToRealPageTarget = -1;
     private View mLastSelectedChip;
+    private boolean mSyncingPager;
 
     /*
      * this array can hold on to arrays which store preset levels,
