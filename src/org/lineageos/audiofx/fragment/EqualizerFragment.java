@@ -66,6 +66,7 @@ public class EqualizerFragment extends AudioFxBaseFragment
     private ViewPager mFakePager;
 
     private int mAnimatingToRealPageTarget = -1;
+    private View mLastSelectedChip;
 
     /*
      * this array can hold on to arrays which store preset levels,
@@ -244,41 +245,57 @@ public class EqualizerFragment extends AudioFxBaseFragment
         refreshChips();
     }
 
-    /** Rebuild the preset chip row from the current presets and highlight the selected one. */
+    /**
+     * Sync the chip row with the presets and highlight the selected one. Chips are reused, not
+     * rebuilt, so a tap in progress is never lost to a refresh.
+     */
     private void refreshChips() {
         if (mChipRow == null || getActivity() == null) {
             return;
         }
-        mChipRow.removeAllViews();
+        final int count = mEqManager.getPresetCount();
         final LayoutInflater inflater = LayoutInflater.from(getActivity());
+        while (mChipRow.getChildCount() > count) {
+            mChipRow.removeViewAt(mChipRow.getChildCount() - 1);
+        }
         View selected = null;
-        for (int i = 0; i < mEqManager.getPresetCount(); i++) {
+        for (int i = 0; i < count; i++) {
             final int index = i;
-            final TextView chip = (TextView) inflater.inflate(R.layout.preset_chip, mChipRow,
-                    false);
+            TextView chip = (TextView) mChipRow.getChildAt(i);
+            if (chip == null) {
+                chip = (TextView) inflater.inflate(R.layout.preset_chip, mChipRow, false);
+                chip.setOnClickListener(v -> selectPresetFromChip(index));
+                mChipRow.addView(chip);
+            }
             chip.setText(mEqManager.getLocalizedPresetName(i));
             chip.setSelected(i == mSelectedPosition);
-            chip.setOnClickListener(v -> selectPresetFromChip(index));
-            mChipRow.addView(chip);
             if (i == mSelectedPosition) {
                 selected = chip;
             }
         }
-        if (selected != null) {
+        if (selected != null && selected != mLastSelectedChip) {
             final View target = selected;
             mChipScroll.post(() -> mChipScroll.smoothScrollTo(
                     Math.max(0, target.getLeft() - mChipScroll.getWidth() / 4), 0));
         }
+        mLastSelectedChip = selected;
     }
 
     private void selectPresetFromChip(int index) {
-        if (index == mSelectedPosition || mEqManager.isAnimatingToCustom() || mDeviceChanging) {
+        if (index == mSelectedPosition || mDeviceChanging) {
             return;
         }
-        jumpToPreset(index);
-        mEqManager.setPreset(index);
+        // an explicit tap wins over a stuck "animating to custom" flag
+        mEqManager.setAnimatingToCustom(false);
         mSelectedPosition = index;
         mSelectedPositionBands = mEqManager.getPresetLevels(index);
+        // move the hidden pager without its listener stepping through the presets in between
+        mSyncingPager = true;
+        jumpToPreset(index);
+        mSyncingPager = false;
+        mCurrentRealPage = mPresetPager.getCurrentItem();
+        mFakePager.setCurrentItem(index);
+        mEqManager.setPreset(index);
         refreshChips();
     }
 
@@ -439,6 +456,9 @@ public class EqualizerFragment extends AudioFxBaseFragment
                 @Override
                 public void onPageScrolled(int newPosition, float positionOffset,
                         int positionOffsetPixels) {
+                    if (mSyncingPager) {
+                        return;
+                    }
                     if (DEBUG_VIEWPAGER) {
                         Log.i(TAG, "onPageScrolled(" + newPosition + ", " + positionOffset + ", "
                                 + positionOffsetPixels + ")");
@@ -524,6 +544,9 @@ public class EqualizerFragment extends AudioFxBaseFragment
 
                 @Override
                 public void onPageSelected(int position) {
+                    if (mSyncingPager) {
+                        return;
+                    }
                     if (DEBUG_VIEWPAGER) Log.i(TAG, "onPageSelected(" + position + ")");
                     mCurrentRealPage = position;
                     position = position % mDataAdapter.getCount();
@@ -540,6 +563,9 @@ public class EqualizerFragment extends AudioFxBaseFragment
                 @Override
                 public void onPageScrollStateChanged(int newState) {
                     mState = newState;
+                    if (mSyncingPager) {
+                        return;
+                    }
                     if (mDeviceChanging) { // avoid setting unwanted presets during custom
                         // animations
                         return;

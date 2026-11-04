@@ -36,6 +36,7 @@ public class EqBarView extends FrameLayout implements StateCallbacks.EqUpdatedCa
     private int mParentTop;
     private Integer mIndex;
     private float mInitialLevel;
+    private float mBottomRaw;
     private final Context mContext;
 
     public EqBarView(Context context) {
@@ -138,6 +139,10 @@ public class EqBarView extends FrameLayout implements StateCallbacks.EqUpdatedCa
         mLastTouchX = x;
         mLastTouchY = y;
         mUserInteracting = true;
+        // the bar's bottom stays put, so the finger's distance above it is the new height
+        final int[] loc = new int[2];
+        getLocationOnScreen(loc);
+        mBottomRaw = loc[1] + getHeight();
 
         if (DEBUG) Log.d(TAG, "initial level: " + mInitialLevel);
         mInitialLevel =
@@ -179,36 +184,11 @@ public class EqBarView extends FrameLayout implements StateCallbacks.EqUpdatedCa
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 startInteraction(x, y);
+                followFinger(event.getRawY());
                 break;
 
             case MotionEvent.ACTION_MOVE:
-                // Calculate the distance moved
-                final float dx = x - mLastTouchX;
-                final float dy = y - mLastTouchY;
-
-                mPosY -= dy;
-
-                // Remember this touch position for the next move event
-                mLastTouchX = x;
-                mLastTouchY = y;
-
-                int wy = (int) mParentHeight;
-                float level = (1 - (mPosY / wy)) * (mEqManager.getMinDB() - mEqManager.getMaxDB())
-                        - mEqManager.getMinDB();
-
-                if (DEBUG) Log.d(TAG, "new level: " + level);
-                if (level < mEqManager.getMinDB()) {
-                    level = mEqManager.getMinDB();
-                } else if (level > mEqManager.getMaxDB()) {
-                    level = mEqManager.getMaxDB();
-                }
-
-                if (mInitialLevel != level) {
-                    mEqManager.setLevel(getInfo().mIndex, level, false);
-                } else {
-                    updateHeight();
-                }
-
+                followFinger(event.getRawY());
                 break;
 
             case MotionEvent.ACTION_CANCEL:
@@ -219,6 +199,21 @@ public class EqBarView extends FrameLayout implements StateCallbacks.EqUpdatedCa
         }
 
         return true;
+    }
+
+    /** Slider behaviour: the handle jumps to the finger and follows it. */
+    private void followFinger(float rawY) {
+        final float h = Math.max(0, Math.min(mParentHeight,
+                mBottomRaw - rawY + mHandleHeight / 2f));
+        mPosY = h;
+        float level = (h / mParentHeight) * (mEqManager.getMaxDB() - mEqManager.getMinDB())
+                + mEqManager.getMinDB();
+        level = Math.max(mEqManager.getMinDB(), Math.min(mEqManager.getMaxDB(), level));
+        if (level != mEqManager.getLevel(getIndex())) {
+            mEqManager.setLevel(getInfo().mIndex, level, false);
+        } else {
+            updateHeight();
+        }
     }
 
     @Override

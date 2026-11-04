@@ -6,6 +6,13 @@
             <solid android:color="@color/afx_accent" />
         </shape>
     </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="18dp" />
+            <solid android:color="@color/afx_track" />
+            <stroke android:width="1dp" android:color="@color/afx_arc_bg" />
+        </shape>
+    </item>
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="18dp" />

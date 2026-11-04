@@ -324,16 +324,18 @@ public class EqContainerView extends FrameLayout
         setControlsVisible(mControlsVisible, true);
     }
 
+    /** Nearest bar by x, anywhere along the track, so gaps and empty track still grab a bar. */
     private EqBarView findBar(float x, float y, List<EqBarView> targets) {
-        final int count = targets.size();
-        for (int i = 0; i < count; i++) {
-            final EqBarView target = targets.get(i);
-            if (target.getRight() > x && target.getTop() < y
-                    && target.getBottom() > y && target.getLeft() < x) {
-                return target;
+        EqBarView best = null;
+        float bestDist = Float.MAX_VALUE;
+        for (EqBarView target : targets) {
+            final float d = Math.abs(x - (target.getLeft() + target.getRight()) / 2f);
+            if (d < bestDist) {
+                bestDist = d;
+                best = target;
             }
         }
-        return null;
+        return y >= mPaddingTop - mBarBottomGrabSpacePadding && y <= getHeight() ? best : null;
     }
 
     @Override
